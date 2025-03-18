@@ -13,7 +13,7 @@ if __name__ == "__main__":
     controller = ImageController(model, view)
 
     # 창 띄우기
-    view.setWindowTitle("PyQt MVC Image App")
+    view.setWindowTitle("Grain Score Prediction")
     view.show()
 
     sys.exit(app.exec_())  # PyQt 이벤트 루프 실행
