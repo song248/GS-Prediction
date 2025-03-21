@@ -50,10 +50,12 @@ class ImageController:
             filtered_image = cv2.bilateralFilter(cropped_image, -1, 10, 10)
 
             # ✅ 5. Dilation 적용 (커널: 3x3)
+            inverted = cv2.bitwise_not(filtered_image)
             kernel = np.ones((3, 3), np.uint8)
-            dilated_image = cv2.dilate(filtered_image, kernel, iterations=1)
+            dilated = cv2.dilate(inverted, kernel, iterations=1)
+            thick_lines = cv2.bitwise_not(dilated)
 
-            return dilated_image
+            return thick_lines
 
         except Exception as e:
             print(f"이미지 전처리 오류: {e}")
