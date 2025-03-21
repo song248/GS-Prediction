@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QApplication
 import sys
-from model import ImageModel  # ✅ model 추가
+from model_inf import ImageModel
 from view import ImageView
 from controller import ImageController
 
