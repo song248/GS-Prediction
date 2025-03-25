@@ -6,7 +6,7 @@ import torch
 from torch.autograd import Variable
 from pytorch_dcsaunet.DCSAU_Net import Model
 import albumentations as A
-from albumentations.pytorch import ToTensor
+from albumentations.pytorch import ToTensorV2
 
 from PyQt5.QtGui import QPixmap, QImage
 
@@ -39,7 +39,7 @@ def get_transform():
     return A.Compose([
         A.Normalize(mean=(0.485, 0.456, 0.406),
                     std=(0.229, 0.224, 0.225)),
-        ToTensor()
+        ToTensorV2()
     ])
 
 def inference_single_image(image: np.ndarray) -> np.ndarray:

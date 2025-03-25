@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QApplication
 import sys
 from model_inf import ImageModel
-from view import ImageView
+from view2 import ImageView
 from controller import ImageController
 
 if __name__ == "__main__":
@@ -13,3 +13,4 @@ if __name__ == "__main__":
 
     view.show()
     sys.exit(app.exec_())
+ 
