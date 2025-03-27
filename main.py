@@ -7,9 +7,9 @@ from controller import ImageController
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-    model = ImageModel()  # ✅ model 추가
+    model = ImageModel()
     view = ImageView()
-    controller = ImageController(model, view)  # ✅ model을 전달하도록 수정
+    controller = ImageController(model, view)
 
     view.show()
     sys.exit(app.exec_())
