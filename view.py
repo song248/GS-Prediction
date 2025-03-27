@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QPushButton, QLabel
+from PyQt5.QtWidgets import QWidget, QPushButton, QLabel, QTableWidget, QTableWidgetItem
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
 
@@ -9,61 +9,95 @@ class ImageView(QWidget):
 
     def init_ui(self):
         self.setWindowTitle("이미지 업로드 및 처리 결과")
-        self.setGeometry(100, 100, 1550, 680)  # ✅ 창 크기 확장
+        self.setGeometry(100, 100, 1900, 720)
         self.setStyleSheet("background-color: white;")
 
-        # Title
+        # 제목
         self.title_label = QLabel("Image Upload", self)
         self.title_label.setFont(QFont("Arial", 14, QFont.Bold))
         self.title_label.setAlignment(Qt.AlignLeft)
-        self.title_label.setGeometry(50, 20, 200, 40)
+        self.title_label.setGeometry(20, 20, 200, 40)
 
-        # Upload button
+        # 업로드 버튼
         self.upload_button = QPushButton("이미지 업로드", self)
         self.upload_button.setFixedSize(120, 40)
-        self.upload_button.setGeometry(50, 60, 120, 40)
+        self.upload_button.setGeometry(20, 70, 120, 40)
 
-        # ✅ 입력 이미지 라벨 및 이미지
+        # 입력 이미지
         self.original_label = QLabel("입력 이미지", self)
         self.original_label.setFont(QFont("Arial", 12, QFont.Bold))
         self.original_label.setAlignment(Qt.AlignLeft)
-        self.original_label.setGeometry(50, 125, 200, 30)  # ← 이미지 좌상단에 맞춤
+        self.original_label.setGeometry(50, 150, 200, 30)
 
         self.original_image_label = QLabel(self)
-        self.original_image_label.setGeometry(40, 150, 560, 400)
+        self.original_image_label.setGeometry(50, 180, 560, 400)
         self.original_image_label.setStyleSheet("border: 1px solid black;")
 
-        # ✅ 전처리 이미지 라벨 및 이미지
+        # 전처리 이미지
         self.processed_label = QLabel("전처리된 이미지", self)
         self.processed_label.setFont(QFont("Arial", 12, QFont.Bold))
         self.processed_label.setAlignment(Qt.AlignLeft)
-        self.processed_label.setGeometry(660, 125, 200, 30)
+        self.processed_label.setGeometry(660, 150, 200, 30)
 
         self.processed_image_label = QLabel(self)
-        self.processed_image_label.setGeometry(650, 150, 400, 400)
+        self.processed_image_label.setGeometry(660, 180, 400, 400)
         self.processed_image_label.setStyleSheet("border: 1px solid black;")
 
-        # ✅ 추론 결과 이미지 라벨 및 이미지
+        # 추론 이미지
         self.result_label = QLabel("모델 추론 결과", self)
         self.result_label.setFont(QFont("Arial", 12, QFont.Bold))
         self.result_label.setAlignment(Qt.AlignLeft)
-        self.result_label.setGeometry(1130, 125, 200, 30)
+        self.result_label.setGeometry(1130, 150, 200, 30)
 
         self.result_image_label = QLabel(self)
-        self.result_image_label.setGeometry(1120, 150, 400, 400)
+        self.result_image_label.setGeometry(1130, 180, 400, 400)
         self.result_image_label.setStyleSheet("border: 1px solid black;")
 
-    # ⬅️ 입력 이미지 표시
+        # 테이블 생성
+        self.table = QTableWidget(self)
+        self.table.setRowCount(7)
+        self.table.setColumnCount(2)
+        self.table.setGeometry(1560, 180, 300, 280)
+
+        self.table.setHorizontalHeaderLabels(["속성", "값"])
+        self.table.verticalHeader().setVisible(False)
+
+        self.table.setShowGrid(True)
+        self.table.setStyleSheet("""
+            QTableWidget {
+                gridline-color: rgba(0, 0, 0, 80);
+                border: none;
+            }
+            QTableWidget::item {
+                border: 1px solid rgba(0, 0, 0, 80);
+                padding: 2px;
+            }
+        """)
+
+        # 🔥 헤더 테두리 확실히 적용
+        self.table.horizontalHeader().setStyleSheet("""
+            QHeaderView::section {
+                border: 1px solid rgba(0, 0, 0, 80);
+                background-color: #f8f8f8;
+                padding: 4px;
+            }
+        """)
+
+
+    # 이미지 표시 함수들
     def set_original_image(self, pixmap):
         pixmap = pixmap.scaled(560, 400, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.original_image_label.setPixmap(pixmap)
 
-    # ⬅️ 전처리 이미지 표시
     def set_processed_image(self, pixmap):
         pixmap = pixmap.scaled(400, 400, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.processed_image_label.setPixmap(pixmap)
 
-    # ⬅️ 추론 결과 이미지 표시
     def set_result_image(self, pixmap):
         pixmap = pixmap.scaled(400, 400, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.result_image_label.setPixmap(pixmap)
+
+    # 테이블 셀 값 설정
+    def set_table_item(self, row, key, value):
+        self.table.setItem(row, 0, QTableWidgetItem(str(key)))
+        self.table.setItem(row, 1, QTableWidgetItem(str(value)))

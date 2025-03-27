@@ -68,4 +68,5 @@ def inference_single_image(image: np.ndarray) -> np.ndarray:
     mask = (mask * 255).astype(np.uint8)
 
     print(f"Inference done!")
+    cv2.imwrite('output_mask.png', mask)
     return mask
