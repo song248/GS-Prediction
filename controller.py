@@ -3,7 +3,7 @@ import numpy as np
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtGui import QPixmap, QImage
 from skimage.morphology import skeletonize
-from model_inf import inference_single_image
+from model_inf import inference_single_image, predict_with_rfr
 
 class ImageController:
     def __init__(self, model, view):
@@ -22,28 +22,50 @@ class ImageController:
             processed_pixmap = self.convert_cv_qt(processed_img)
             self.view.set_processed_image(processed_pixmap)
 
-            # ✅ 후처리 + contour 추출 + 시각화 이미지
             result_mask = inference_single_image(processed_img)
             real_final, contours = self.postprocess_mask(result_mask)
             result_pixmap = self.convert_cv_qt(real_final)
             self.view.set_result_image(result_pixmap)
 
-            # ✅ 컨투어 통계 테이블 표시
+            # ✅ 통계 계산
             areas = [cv2.contourArea(c) for c in contours]
             if areas:
                 stats = {
-                    "Count": len(areas),
-                    "Min": round(min(areas), 2),
-                    "Max": round(max(areas), 2),
-                    "Mean": round(np.mean(areas), 2),
-                    "Std": round(np.std(areas), 2),
-                    "Median": round(np.median(areas), 2),
+                    "cnt_con_pt": len(areas),
+                    "min_con_pt": round(min(areas), 2),
+                    "max_con_pt": round(max(areas), 2),
+                    "avg_con_pt": round(np.mean(areas), 2),
+                    "std_con_pt": round(np.std(areas), 2),
+                    "med_con_pt": round(np.median(areas), 2),
                 }
             else:
-                stats = {k: 0 for k in ["Count", "Min", "Max", "Mean", "Std", "Median"]}
+                stats = {k: 0 for k in [
+                    "cnt_con_pt", "min_con_pt", "max_con_pt",
+                    "avg_con_pt", "std_con_pt", "med_con_pt"
+                ]}
 
-            for i, key in enumerate(stats):
-                self.view.set_table_item(i, key, stats[key])
+            # ✅ 테이블 채우기
+            display_keys = {
+                "cnt_con_pt": "Count",
+                "min_con_pt": "Min",
+                "max_con_pt": "Max",
+                "avg_con_pt": "Mean",
+                "std_con_pt": "Std",
+                "med_con_pt": "Median"
+            }
+            for i, key in enumerate(display_keys):
+                self.view.set_table_item(i, display_keys[key], stats[key])
+
+            # ✅ 모델 예측
+            prediction = predict_with_rfr({
+                "Min": stats["min_con_pt"],
+                "Max": stats["max_con_pt"],
+                "Mean": stats["avg_con_pt"],
+                "Count": stats["cnt_con_pt"],
+                "Std": stats["std_con_pt"],
+                "Median": stats["med_con_pt"]
+            })
+            self.view.set_prediction_value(prediction)
 
     def preprocess_image(self, img):
         try:
@@ -87,7 +109,6 @@ class ImageController:
         final_img = np.ones_like(cropped_back, dtype=np.uint8) * 255
         final_img[cropped_back == 255] = 0
 
-        # ✅ Erode + contour detection + 시각화
         eroded = cv2.erode(final_img, kernel, iterations=2)
         contours, _ = cv2.findContours(eroded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         image_color = cv2.cvtColor(eroded, cv2.COLOR_GRAY2BGR)

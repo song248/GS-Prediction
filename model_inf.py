@@ -1,13 +1,13 @@
 import os
 import cv2
 import numpy as np
-
 import torch
+import pickle
+import pandas as pd
 from torch.autograd import Variable
 from pytorch_dcsaunet.DCSAU_Net import Model
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
-
 from PyQt5.QtGui import QPixmap, QImage
 
 class ImageModel:
@@ -29,12 +29,12 @@ class ImageModel:
         """OpenCV 이미지를 QPixmap으로 변환"""
         if cv_img is None:
             return QPixmap()
-
         height, width, channel = cv_img.shape
         bytes_per_line = channel * width
         q_img = QImage(cv_img.data, width, height, bytes_per_line, QImage.Format_RGB888).rgbSwapped()
         return QPixmap.fromImage(q_img)
 
+# ✅ 이미지 전처리용 transform
 def get_transform():
     return A.Compose([
         A.Normalize(mean=(0.485, 0.456, 0.406),
@@ -42,18 +42,18 @@ def get_transform():
         ToTensorV2()
     ])
 
+# ✅ PyTorch 모델 추론 (DCSAU-Net)
 def inference_single_image(image: np.ndarray) -> np.ndarray:
     model_path = 'assets/epoch_last.pth'
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    if len(image.shape) == 2:  # Grayscale (H, W)
-        image = cv2.merge([image, image, image])  # → (H, W, 3)
+    if len(image.shape) == 2:  # Grayscale → RGB
+        image = cv2.merge([image, image, image])
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    # image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) if image.shape[-1] == 3 else image
 
     transform = get_transform()
     transformed = transform(image=image_rgb)
-    image_tensor = transformed['image'].unsqueeze(0).to(device)  # [1, C, H, W]
+    image_tensor = transformed['image'].unsqueeze(0).to(device)
 
     model = torch.load(model_path, map_location=device)
     model.to(device)
@@ -64,9 +64,37 @@ def inference_single_image(image: np.ndarray) -> np.ndarray:
         output = torch.sigmoid(output)
         output = (output >= 0.5).float()
 
-    mask = output.squeeze().cpu().numpy()  # [H, W]
+    mask = output.squeeze().cpu().numpy()
     mask = (mask * 255).astype(np.uint8)
 
-    print(f"Inference done!")
+    print("Inference done!")
     cv2.imwrite('output_mask.png', mask)
     return mask
+
+# ✅ 랜덤 포레스트 회귀 예측 (stats → 예측값)
+def predict_with_rfr(stats: dict) -> float:
+    """
+    stats: {
+        'min_con_pt': float,
+        'max_con_pt': float,
+        'avg_con_pt': float,
+        'cnt_con_pt': int,
+        'std_con_pt': float,
+        'med_con_pt': float
+    }
+    """
+    model_path = './model/random_forest_regressor.pkl'
+    with open(model_path, 'rb') as f:
+        loaded_rfr = pickle.load(f)
+
+    input_data = pd.DataFrame({
+        'min_con_pt': [stats['Min']],
+        'max_con_pt': [stats['Max']],
+        'avg_con_pt': [stats['Mean']],
+        'cnt_con_pt': [stats['Count']],
+        'std_con_pt': [stats['Std']],
+        'med_con_pt': [stats['Median']]
+    })
+
+    prediction = loaded_rfr.predict(input_data)[0]
+    return prediction

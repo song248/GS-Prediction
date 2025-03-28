@@ -1,7 +1,7 @@
 import xgboost as xgb
 import numpy as np
 
-loaded_model = xgb.XGBClassifier()
+loaded_model = xgb.XGBRegressor()
 loaded_model.load_model("xgb_model.json")
 
 print("모델 구조 확인:", loaded_model)

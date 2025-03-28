@@ -45,6 +45,7 @@ class ImageView(QWidget):
         self.result_image_label.setGeometry(1130, 180, 400, 400)
         self.result_image_label.setStyleSheet("border: 1px solid black;")
 
+        # ✅ 테이블 (통계)
         self.table = QTableWidget(self)
         self.table.setRowCount(6)
         self.table.setColumnCount(2)
@@ -70,6 +71,12 @@ class ImageView(QWidget):
             }
         """)
 
+        # ✅ 예측값 출력용 라벨 추가
+        self.prediction_label = QLabel("Grain Score: N/A", self)
+        self.prediction_label.setFont(QFont("Arial", 12, QFont.Bold))
+        self.prediction_label.setAlignment(Qt.AlignLeft)
+        self.prediction_label.setGeometry(1560, 480, 300, 40)
+
     def set_original_image(self, pixmap):
         self.original_image_label.setPixmap(pixmap.scaled(560, 400, Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
@@ -82,3 +89,7 @@ class ImageView(QWidget):
     def set_table_item(self, row, key, value):
         self.table.setItem(row, 0, QTableWidgetItem(str(key)))
         self.table.setItem(row, 1, QTableWidgetItem(str(value)))
+
+    def set_prediction_value(self, value):
+        """랜덤 포레스트 예측값 표시"""
+        self.prediction_label.setText(f"Grain Score: {value:.2f}")
