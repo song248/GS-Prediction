@@ -86,14 +86,26 @@ def predict_with_rfr(stats: dict) -> float:
     model_path = './model/random_forest_regressor.pkl'
     with open(model_path, 'rb') as f:
         loaded_rfr = pickle.load(f)
+    with open('./model/min_scaler.pkl', 'rb') as f:
+        min_scaler = pickle.load(f)
+    with open('./model/max_scaler.pkl', 'rb') as f:
+        max_scaler = pickle.load(f)
+    with open('./model/mean_scaler.pkl', 'rb') as f:
+        mean_scaler = pickle.load(f)
+    with open('./model/count_scaler.pkl', 'rb') as f:
+        count_scaler = pickle.load(f)
+    with open('./model/std_scaler.pkl', 'rb') as f:
+        std_scaler = pickle.load(f)
+    with open('./model/median_scaler.pkl', 'rb') as f:
+        median_scaler = pickle.load(f)
 
     input_data = pd.DataFrame({
-        'min_con_pt': [stats['Min']],
-        'max_con_pt': [stats['Max']],
-        'avg_con_pt': [stats['Mean']],
-        'cnt_con_pt': [stats['Count']],
-        'std_con_pt': [stats['Std']],
-        'med_con_pt': [stats['Median']]
+        'min_con_pt': [min_scaler.transform([[stats['Min']]])[0, 0]],
+        'max_con_pt': [max_scaler.transform([[stats['Max']]])[0, 0]],
+        'avg_con_pt': [mean_scaler.transform([[stats['Mean']]])[0, 0]],
+        'cnt_con_pt': [count_scaler.transform([[stats['Count']]])[0, 0]],
+        'std_con_pt': [std_scaler.transform([[stats['Std']]])[0, 0]],
+        'med_con_pt': [median_scaler.transform([[stats['Median']]])[0, 0]],
     })
 
     prediction = loaded_rfr.predict(input_data)[0]

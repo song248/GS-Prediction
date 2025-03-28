@@ -75,7 +75,7 @@ class ImageView(QWidget):
         self.prediction_label = QLabel("Grain Score: N/A", self)
         self.prediction_label.setFont(QFont("Arial", 12, QFont.Bold))
         self.prediction_label.setAlignment(Qt.AlignLeft)
-        self.prediction_label.setGeometry(1560, 480, 300, 40)
+        self.prediction_label.setGeometry(1560, 400, 300, 40)
 
     def set_original_image(self, pixmap):
         self.original_image_label.setPixmap(pixmap.scaled(560, 400, Qt.KeepAspectRatio, Qt.SmoothTransformation))

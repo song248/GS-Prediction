@@ -79,6 +79,7 @@ class ImageController:
             kernel = np.ones((3, 3), np.uint8)
             dilated = cv2.dilate(inverted, kernel, iterations=1)
             thick_lines = cv2.bitwise_not(dilated)
+            cv2.imwrite('chk.png', thick_lines)
             return thick_lines
         except Exception as e:
             print(f"[전처리 오류] {e}")
@@ -110,7 +111,8 @@ class ImageController:
         final_img[cropped_back == 255] = 0
 
         eroded = cv2.erode(final_img, kernel, iterations=2)
-        contours, _ = cv2.findContours(eroded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        # contours, _ = cv2.findContours(eroded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(eroded, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         image_color = cv2.cvtColor(eroded, cv2.COLOR_GRAY2BGR)
         cv2.drawContours(image_color, contours, -1, (0, 255, 0), 2)
 
