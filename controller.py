@@ -9,63 +9,66 @@ class ImageController:
     def __init__(self, model, view):
         self.model = model
         self.view = view
+
+        # 버튼 연결
         self.view.upload_button.clicked.connect(self.upload_image)
+        self.view.predict_button.clicked.connect(self.run_prediction)
+
+        # 내부 상태 보관
+        self.result_image = None
+        self.result_mask = None
 
     def upload_image(self):
         file_path, _ = QFileDialog.getOpenFileName(self.view, "이미지 선택", "", "Images (*.png *.jpg *.jpeg *.bmp)")
-        if file_path:
-            self.model.load_image(file_path)
-            original_pixmap = self.convert_cv_qt(self.model.original_image)
-            self.view.set_original_image(original_pixmap)
+        if not file_path:
+            return
 
-            processed_img = self.preprocess_image(self.model.original_image)
-            processed_pixmap = self.convert_cv_qt(processed_img)
-            self.view.set_processed_image(processed_pixmap)
+        self.model.load_image(file_path)
+        self.view.set_original_image(self.convert_cv_qt(self.model.original_image))
 
-            result_mask = inference_single_image(processed_img)
-            real_final, contours = self.postprocess_mask(result_mask)
-            result_pixmap = self.convert_cv_qt(real_final)
-            self.view.set_result_image(result_pixmap)
+        processed_img = self.preprocess_image(self.model.original_image)
+        self.view.set_processed_image(self.convert_cv_qt(processed_img))
 
-            # ✅ 통계 계산
-            areas = [cv2.contourArea(c) for c in contours]
-            if areas:
-                stats = {
-                    "cnt_con_pt": len(areas),
-                    "min_con_pt": round(min(areas), 2),
-                    "max_con_pt": round(max(areas), 2),
-                    "avg_con_pt": round(np.mean(areas), 2),
-                    "std_con_pt": round(np.std(areas), 2),
-                    "med_con_pt": round(np.median(areas), 2),
-                }
-            else:
-                stats = {k: 0 for k in [
-                    "cnt_con_pt", "min_con_pt", "max_con_pt",
-                    "avg_con_pt", "std_con_pt", "med_con_pt"
-                ]}
+        # ✅ 마스크 추론만 수행 (후처리/예측 X)
+        self.result_mask = inference_single_image(processed_img)
 
-            # ✅ 테이블 채우기
-            display_keys = {
-                "cnt_con_pt": "Count",
-                "min_con_pt": "Min",
-                "max_con_pt": "Max",
-                "avg_con_pt": "Mean",
-                "std_con_pt": "Std",
-                "med_con_pt": "Median"
+    def run_prediction(self):
+        if self.result_mask is None:
+            print("[예측 오류] 먼저 이미지를 업로드하세요.")
+            return
+
+        # ✅ 후처리 및 contour 추출
+        real_final, contours = self.postprocess_mask(self.result_mask)
+        self.result_image = real_final
+        self.view.set_result_image(self.convert_cv_qt(real_final))
+
+        # ✅ contour 통계 계산
+        areas = [cv2.contourArea(c) for c in contours]
+        if areas:
+            stats = {
+                "Count": len(areas),
+                "Min": round(min(areas), 2),
+                "Max": round(max(areas), 2),
+                "Mean": round(np.mean(areas), 2),
+                "Std": round(np.std(areas), 2),
+                "Median": round(np.median(areas), 2),
             }
-            for i, key in enumerate(display_keys):
-                self.view.set_table_item(i, display_keys[key], stats[key])
+        else:
+            stats = {k: 0 for k in ["Count", "Min", "Max", "Mean", "Std", "Median"]}
 
-            # ✅ 모델 예측
-            prediction = predict_with_rfr({
-                "Min": stats["min_con_pt"],
-                "Max": stats["max_con_pt"],
-                "Mean": stats["avg_con_pt"],
-                "Count": stats["cnt_con_pt"],
-                "Std": stats["std_con_pt"],
-                "Median": stats["med_con_pt"]
-            })
-            self.view.set_prediction_value(prediction)
+        for i, key in enumerate(stats):
+            self.view.set_table_item(i, key, stats[key])
+
+        # ✅ 드롭다운 선택값 가져오기
+        category1, category2 = self.view.get_selected_categories()
+        print("선택된 드롭다운 값:", category1, category2)
+
+        # (선택적으로) 카테고리 값을 stats에 포함 가능
+        # 예: stats["Category1"] = category1_map[category1]
+
+        # ✅ 예측 수행
+        prediction = predict_with_rfr(stats)
+        self.view.set_prediction_value(prediction)
 
     def preprocess_image(self, img):
         try:
@@ -78,9 +81,7 @@ class ImageController:
             inverted = cv2.bitwise_not(filtered)
             kernel = np.ones((3, 3), np.uint8)
             dilated = cv2.dilate(inverted, kernel, iterations=1)
-            thick_lines = cv2.bitwise_not(dilated)
-            cv2.imwrite('chk.png', thick_lines)
-            return thick_lines
+            return cv2.bitwise_not(dilated)
         except Exception as e:
             print(f"[전처리 오류] {e}")
             return img
@@ -98,7 +99,6 @@ class ImageController:
 
     @staticmethod
     def postprocess_mask(mask: np.ndarray):
-        """후처리 + contour detection + 시각화"""
         _, binary = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY_INV)
         padded = np.pad(binary, ((5, 5), (5, 5)), mode='constant', constant_values=0)
         kernel = np.ones((3, 3), np.uint8)
@@ -111,13 +111,13 @@ class ImageController:
         final_img[cropped_back == 255] = 0
 
         eroded = cv2.erode(final_img, kernel, iterations=2)
-        # contours, _ = cv2.findContours(eroded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         contours, _ = cv2.findContours(eroded, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         image_color = cv2.cvtColor(eroded, cv2.COLOR_GRAY2BGR)
         cv2.drawContours(image_color, contours, -1, (0, 255, 0), 2)
 
         return image_color, contours
 
+# 끝점 관련 함수
 def find_endpoints(skel):
     endpoints = []
     h, w = skel.shape
