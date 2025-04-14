@@ -1,4 +1,7 @@
-from PyQt5.QtWidgets import QWidget, QPushButton, QLabel, QTableWidget, QTableWidgetItem, QComboBox
+from PyQt5.QtWidgets import (
+    QWidget, QPushButton, QLabel, QTableWidget, QTableWidgetItem,
+    QComboBox, QLineEdit
+)
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt
 
@@ -23,43 +26,53 @@ class ImageView(QWidget):
         self.upload_button.setFixedSize(120, 40)
         self.upload_button.setGeometry(20, 70, 120, 40)
 
-        # 드롭다운 1
-        self.combo_box1 = QComboBox(self)
-        self.combo_box1.setGeometry(160, 70, 150, 40)
-        self.combo_box1.addItems(["Option 1", "Option 2", "Option 3"])
+        # 드롭다운 (A, B, C, D)
+        self.label_dropdown = QLabel("Rater", self)
+        self.label_dropdown.setFont(QFont("Arial", 10, QFont.Bold))
+        self.label_dropdown.setGeometry(220, 45, 150, 20)
 
-        # 드롭다운 2
-        self.combo_box2 = QComboBox(self)
-        self.combo_box2.setGeometry(320, 70, 150, 40)
-        self.combo_box2.addItems(["State A", "State B", "State C"])
+        self.category_combo = QComboBox(self)
+        self.category_combo.setGeometry(220, 70, 120, 30)
+        self.category_combo.addItems(["A", "B", "C", "D"])
 
-        # 예측 실행 버튼
+        # steel 입력칸
+        self.label_steel = QLabel("Steel", self)
+        self.label_steel.setFont(QFont("Arial", 10, QFont.Bold))
+        self.label_steel.setGeometry(360, 45, 100, 20)
+
+        self.steel_input = QLineEdit(self)
+        self.steel_input.setGeometry(360, 70, 120, 30)
+
+        # lot 입력칸
+        self.label_lot = QLabel("Lot", self)
+        self.label_lot.setFont(QFont("Arial", 10, QFont.Bold))
+        self.label_lot.setGeometry(500, 45, 100, 20)
+
+        self.lot_input = QLineEdit(self)
+        self.lot_input.setGeometry(500, 70, 120, 30)
+
+        # 예측 버튼
         self.predict_button = QPushButton("Run Prediction", self)
         self.predict_button.setFixedSize(160, 40)
-        self.predict_button.setGeometry(490, 70, 160, 40)
+        self.predict_button.setGeometry(640, 70, 160, 40)
 
-        # 원본 이미지
+        # 이미지 및 테이블
         self.original_label = QLabel("Input Image", self)
         self.original_label.setFont(QFont("Arial", 12, QFont.Bold))
-        self.original_label.setAlignment(Qt.AlignLeft)
         self.original_label.setGeometry(50, 150, 200, 30)
         self.original_image_label = QLabel(self)
         self.original_image_label.setGeometry(50, 180, 560, 400)
         self.original_image_label.setStyleSheet("border: 1px solid black;")
 
-        # 전처리 이미지
         self.processed_label = QLabel("Processed Image", self)
         self.processed_label.setFont(QFont("Arial", 12, QFont.Bold))
-        self.processed_label.setAlignment(Qt.AlignLeft)
         self.processed_label.setGeometry(660, 150, 200, 30)
         self.processed_image_label = QLabel(self)
         self.processed_image_label.setGeometry(660, 180, 400, 400)
         self.processed_image_label.setStyleSheet("border: 1px solid black;")
 
-        # 추론 이미지
         self.result_label = QLabel("Inference Image", self)
         self.result_label.setFont(QFont("Arial", 12, QFont.Bold))
-        self.result_label.setAlignment(Qt.AlignLeft)
         self.result_label.setGeometry(1130, 150, 200, 30)
         self.result_image_label = QLabel(self)
         self.result_image_label.setGeometry(1130, 180, 400, 400)
@@ -72,6 +85,7 @@ class ImageView(QWidget):
         self.table.setGeometry(1560, 180, 300, 280)
         self.table.setHorizontalHeaderLabels(["Attr", "Value"])
         self.table.verticalHeader().setVisible(False)
+
         self.table.setShowGrid(True)
         self.table.setStyleSheet("""
             QTableWidget {
@@ -91,10 +105,9 @@ class ImageView(QWidget):
             }
         """)
 
-        # 예측값 출력
+        # 예측 결과 표시
         self.prediction_label = QLabel("Grain Score: N/A", self)
         self.prediction_label.setFont(QFont("Arial", 12, QFont.Bold))
-        self.prediction_label.setAlignment(Qt.AlignLeft)
         self.prediction_label.setGeometry(1560, 480, 300, 40)
 
     # 이미지 표시
@@ -107,15 +120,19 @@ class ImageView(QWidget):
     def set_result_image(self, pixmap):
         self.result_image_label.setPixmap(pixmap.scaled(400, 400, Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
-    # 테이블 셀 지정
     def set_table_item(self, row, key, value):
         self.table.setItem(row, 0, QTableWidgetItem(str(key)))
         self.table.setItem(row, 1, QTableWidgetItem(str(value)))
 
-    # 예측값 출력
     def set_prediction_value(self, value):
         self.prediction_label.setText(f"Grain Score: {value:.2f}")
 
-    # 드롭다운 선택값 반환
-    def get_selected_categories(self):
-        return self.combo_box1.currentText(), self.combo_box2.currentText()
+    # ✅ 입력값들 반환 (드롭다운 + 텍스트)
+    def get_category_input(self):
+        return self.category_combo.currentText()
+
+    def get_steel_input(self):
+        return self.steel_input.text()
+
+    def get_lot_input(self):
+        return self.lot_input.text()

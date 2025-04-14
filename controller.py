@@ -14,9 +14,9 @@ class ImageController:
         self.view.upload_button.clicked.connect(self.upload_image)
         self.view.predict_button.clicked.connect(self.run_prediction)
 
-        # 내부 상태 보관
-        self.result_image = None
+        # 내부 상태 저장용
         self.result_mask = None
+        self.result_image = None
 
     def upload_image(self):
         file_path, _ = QFileDialog.getOpenFileName(self.view, "이미지 선택", "", "Images (*.png *.jpg *.jpeg *.bmp)")
@@ -29,7 +29,6 @@ class ImageController:
         processed_img = self.preprocess_image(self.model.original_image)
         self.view.set_processed_image(self.convert_cv_qt(processed_img))
 
-        # ✅ 마스크 추론만 수행 (후처리/예측 X)
         self.result_mask = inference_single_image(processed_img)
 
     def run_prediction(self):
@@ -37,12 +36,12 @@ class ImageController:
             print("[예측 오류] 먼저 이미지를 업로드하세요.")
             return
 
-        # ✅ 후처리 및 contour 추출
+        # 후처리 및 contour 추출
         real_final, contours = self.postprocess_mask(self.result_mask)
         self.result_image = real_final
         self.view.set_result_image(self.convert_cv_qt(real_final))
 
-        # ✅ contour 통계 계산
+        # contour 통계 계산
         areas = [cv2.contourArea(c) for c in contours]
         if areas:
             stats = {
@@ -59,15 +58,19 @@ class ImageController:
         for i, key in enumerate(stats):
             self.view.set_table_item(i, key, stats[key])
 
-        # ✅ 드롭다운 선택값 가져오기
-        category1, category2 = self.view.get_selected_categories()
-        print("선택된 드롭다운 값:", category1, category2)
+        category = self.view.get_category_input()
+        steel = self.view.get_steel_input()
+        lot = self.view.get_lot_input()
 
-        # (선택적으로) 카테고리 값을 stats에 포함 가능
-        # 예: stats["Category1"] = category1_map[category1]
+        input_data = {
+            **stats,
+            "Category": category,
+            "Steel": steel,
+            "Lot": lot
+        }
 
-        # ✅ 예측 수행
-        prediction = predict_with_rfr(stats)
+        # 예측
+        prediction = predict_with_rfr(input_data)
         self.view.set_prediction_value(prediction)
 
     def preprocess_image(self, img):
@@ -117,7 +120,7 @@ class ImageController:
 
         return image_color, contours
 
-# 끝점 관련 함수
+# 골격 관련 함수
 def find_endpoints(skel):
     endpoints = []
     h, w = skel.shape
