@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import torch
 import pickle
+import time
 import pandas as pd
 from torch.autograd import Variable
 from pytorch_dcsaunet.DCSAU_Net import Model
@@ -37,6 +38,33 @@ def get_transform():
         ToTensorV2()
     ])
 
+# def inference_single_image(image: np.ndarray) -> np.ndarray:
+#     model_path = 'assets/epoch_last.pth'
+#     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+#     if len(image.shape) == 2:
+#         image = cv2.merge([image, image, image])
+#     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+#     transform = get_transform()
+#     transformed = transform(image=image_rgb)
+#     image_tensor = transformed['image'].unsqueeze(0).to(device)
+
+#     model = torch.load(model_path, map_location=device)
+#     model.to(device)
+#     model.eval()
+
+#     with torch.no_grad():
+#         output = model(image_tensor)
+#         output = torch.sigmoid(output)
+#         output = (output >= 0.5).float()
+
+#     mask = output.squeeze().cpu().numpy()
+#     mask = (mask * 255).astype(np.uint8)
+
+#     print("Inference done!")
+#     cv2.imwrite('output_mask.png', mask)
+#     return mask
 def inference_single_image(image: np.ndarray) -> np.ndarray:
     model_path = 'assets/epoch_last.pth'
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -53,18 +81,23 @@ def inference_single_image(image: np.ndarray) -> np.ndarray:
     model.to(device)
     model.eval()
 
+    start_time = time.time()  # 시간 측정 시작
+
     with torch.no_grad():
         output = model(image_tensor)
         output = torch.sigmoid(output)
         output = (output >= 0.5).float()
 
+    elapsed_time = time.time() - start_time  # 시간 측정 종료
+
     mask = output.squeeze().cpu().numpy()
     mask = (mask * 255).astype(np.uint8)
 
     print("Inference done!")
+    print(f"Inference time: {elapsed_time:.4f} seconds")  # 추론 시간 출력
+
     cv2.imwrite('output_mask.png', mask)
     return mask
-
 def predict_with_rfr(stats: dict) -> float:
     """
     stats: {
@@ -106,7 +139,7 @@ def predict_with_rfr(stats: dict) -> float:
        'STS304SX', 'STS316VARS2', 'STS316VAR', 'STS316LS1', 'STS310SS2',
        'STS316LJSE', '304LDSB', 'STS304J3S', 'STS304HCMS7', 'STS304H1S5',
        'STS316LEPSB', '316LDSB', 'API316LDS1', '316LDSY', 'other']
-    valid_lots = ['B3B0544800', 'B410066807', 'B320715101', 'B3C0494500', 'B3C0494401', 'B3B0451009', 'B3C0491901', 'B3B0545501', 'B3C0477900', 'B410101403', 'B410465200', 'B410139200',
+    valid_lots = ['B3B0544800', 'B410066807', 'B320715101', 'B3C0494500', 'B3C0494401', 'B3B0451009', 'B3C0491901', 'B3B0545501', 'B3C0477900', 'B410101403', 'B410465200',
        'B410101402', 'B420026100', 'B420025700', 'B3C0155105', 'B410102100', 'B410101400', 'B410067200', 'B410101401', 'B3B0451010', 'B3B0451303', 'B420026700', 'B410464900',
        'B410066601', 'B410465500', 'B410466100', 'B3B0545302', 'B410065907', 'B410161000', 'B410161105', 'B410161501', 'B410161601', 'B3B0542100', 'B3B0542200', 'B3B0542400',
        'B410065902', 'B3B0451400', 'B390610500', 'B420043100', 'B410103300', 'B410159901', 'B3C0483502', 'B410161202', 'B3C0154200', 'B3C0155100', 'B3B0557100', 'B3B0557005',
@@ -126,7 +159,7 @@ def predict_with_rfr(stats: dict) -> float:
        'B3B0490401', 'B420083200', 'B430141400', 'B430121501', 'B410147700', 'B430148800', 'B420084200', 'B420084500', 'B3C0364500', 'B420084400', 'B420089000', 'B430109300',
        'B330852300', 'B420177500', 'B420177501', 'B420405300', 'B410155900', 'B420093500', 'B410155800', 'B420106400', 'B3B0212000', 'B3C0399110', 'B420162400', 'B420171300',
        'B430296300', 'B080478500', 'B370097700', 'B410150200', 'B3A0362709', 'B410315100', 'B3B0451401', 'B420048900', 'B410538300', 'B420405800', 'B3C0364100', 'B3C0135800',
-       'B3C0138900', 'B3C0153800', 'B3C0154000', 'B3C0305900', 'B3C0476500', 'B3C0477000', 'B410102600', 'B410102601', 'B420262600', 'other']
+       'B3C0138900', 'B3C0153800', 'B3C0154000', 'B3C0305900', 'B3C0476500', 'B3C0477000', 'B410102600', 'B410102601', 'B420262600', 'B410139200', 'other']
 
     steel = stats["Steel"] if stats["Steel"] in valid_steels else 'other'
     lot = stats["Lot"] if stats["Lot"] in valid_lots else 'other'
@@ -144,6 +177,12 @@ def predict_with_rfr(stats: dict) -> float:
         'lot_enc': [lot_encoder.transform([lot])[0]]
     })
 
-    # 4. 예측
+    # 4. 예측 및 시간 측정
+    start_time = time.time()
     prediction = model.predict(input_data)[0]
+    elapsed_time = time.time() - start_time
+
+    print("Prediction done!")
+    print(f"Prediction time: {elapsed_time:.4f} seconds")  # 예측 시간 출력
+
     return prediction

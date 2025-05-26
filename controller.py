@@ -69,7 +69,6 @@ class ImageController:
             "Lot": lot
         }
 
-        # 예측
         prediction = predict_with_rfr(input_data)
         self.view.set_prediction_value(prediction)
 

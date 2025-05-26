@@ -127,7 +127,6 @@ class ImageView(QWidget):
     def set_prediction_value(self, value):
         self.prediction_label.setText(f"Grain Score: {value:.2f}")
 
-    # ✅ 입력값들 반환 (드롭다운 + 텍스트)
     def get_category_input(self):
         return self.category_combo.currentText()
 
