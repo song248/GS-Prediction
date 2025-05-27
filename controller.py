@@ -45,11 +45,10 @@ class ImageController:
             stats = {k: 0 for k in ["Count", "Min", "Max", "Mean", "Std", "Median"]}
 
         for i, key in enumerate(stats):
-            self.view.set_table_item(i, key, stats[key])
+            self.view.set_stat_table_item(i, key, stats[key])
         category = self.view.get_category_input()
         steel = self.view.get_steel_input()
         lot = self.view.get_lot_input()
-
         input_data = {
             **stats,
             "Category": category,
@@ -61,8 +60,8 @@ class ImageController:
         self.view.set_prediction_value(gs_prediction)
         tabnet_results = predict_with_tabnet(input_data, gs_prediction)
         tabnet_keys = ["TS", "YS", "RA", "EL"]
-        for i, key in enumerate(tabnet_keys, start=6):
-            self.view.set_table_item(i, key, round(tabnet_results[key], 2))
+        for i, key in enumerate(tabnet_keys, start=1):
+            self.view.set_result_table_item(i, key, round(tabnet_results[key], 2))
 
     def preprocess_image(self, img):
         try:

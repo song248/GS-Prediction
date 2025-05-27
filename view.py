@@ -12,7 +12,7 @@ class ImageView(QWidget):
 
     def init_ui(self):
         self.setWindowTitle("이미지 업로드 및 처리 결과")
-        self.setGeometry(100, 100, 1900, 720)
+        self.setGeometry(100, 100, 1680, 590)
         self.setStyleSheet("background-color: white;")
 
         # 제목
@@ -56,59 +56,67 @@ class ImageView(QWidget):
         self.predict_button.setFixedSize(160, 40)
         self.predict_button.setGeometry(640, 70, 160, 40)
 
-        # 이미지 및 테이블
+        # 이미지
         self.original_label = QLabel("Input Image", self)
         self.original_label.setFont(QFont("Arial", 12, QFont.Bold))
-        self.original_label.setGeometry(50, 150, 200, 30)
+        self.original_label.setGeometry(30, 140, 200, 30)
         self.original_image_label = QLabel(self)
-        self.original_image_label.setGeometry(50, 180, 560, 400)
+        self.original_image_label.setGeometry(30, 170, 560, 400)
         self.original_image_label.setStyleSheet("border: 1px solid black;")
 
         self.processed_label = QLabel("Processed Image", self)
         self.processed_label.setFont(QFont("Arial", 12, QFont.Bold))
-        self.processed_label.setGeometry(660, 150, 200, 30)
+        self.processed_label.setGeometry(610, 140, 200, 30)
         self.processed_image_label = QLabel(self)
-        self.processed_image_label.setGeometry(660, 180, 400, 400)
+        self.processed_image_label.setGeometry(610, 170, 400, 400)
         self.processed_image_label.setStyleSheet("border: 1px solid black;")
 
         self.result_label = QLabel("Inference Image", self)
         self.result_label.setFont(QFont("Arial", 12, QFont.Bold))
-        self.result_label.setGeometry(1130, 150, 200, 30)
+        self.result_label.setGeometry(1030, 140, 200, 30)
         self.result_image_label = QLabel(self)
-        self.result_image_label.setGeometry(1130, 180, 400, 400)
+        self.result_image_label.setGeometry(1030, 170, 400, 400)
         self.result_image_label.setStyleSheet("border: 1px solid black;")
 
-        # 테이블
-        self.table = QTableWidget(self)
-        self.table.setRowCount(10)
-        self.table.setColumnCount(2)
-        self.table.setGeometry(1560, 180, 300, 380)
-        self.table.setHorizontalHeaderLabels(["Attr", "Value"])
-        self.table.verticalHeader().setVisible(False)
+        # Origin Table
+        self.stat_table = QTableWidget(self)
+        self.stat_table.setRowCount(6)
+        self.stat_table.setColumnCount(2)
+        self.stat_table.setGeometry(1450, 170, 300, 210)
+        self.stat_table.setHorizontalHeaderLabels(["Attr", "Value"])
+        self.stat_table.verticalHeader().setVisible(False)
+        self.stat_table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.stat_table.setFixedHeight(self.stat_table.rowHeight(0) * 6 + self.stat_table.horizontalHeader().height())
 
-        self.table.setShowGrid(True)
-        self.table.setStyleSheet("""
-            QTableWidget {
-                gridline-color: rgba(0, 0, 0, 80);
-                border: none;
-            }
-            QTableWidget::item {
-                border: 1px solid rgba(0, 0, 0, 80);
-                padding: 2px;
-            }
-        """)
-        self.table.horizontalHeader().setStyleSheet("""
-            QHeaderView::section {
-                border: 1px solid rgba(0, 0, 0, 80);
-                background-color: #f8f8f8;
-                padding: 4px;
-            }
-        """)
+        # Result Table
+        self.result_table = QTableWidget(self)
+        self.result_table.setRowCount(5)
+        self.result_table.setColumnCount(2)
+        self.result_table.setGeometry(1450, 390, 300, 180)
+        self.result_table.setHorizontalHeaderLabels(["Attr", "Value"])
+        self.result_table.verticalHeader().setVisible(False)
+        self.result_table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.result_table.setFixedHeight(self.result_table.rowHeight(0) * 5 + self.result_table.horizontalHeader().height())
 
-        # 예측 결과 표시
-        self.prediction_label = QLabel("Grain Score: N/A", self)
-        self.prediction_label.setFont(QFont("Arial", 12, QFont.Bold))
-        self.prediction_label.setGeometry(1560, 580, 300, 40)
+        for table in [self.stat_table, self.result_table]:
+            table.setShowGrid(True)
+            table.setStyleSheet("""
+                QTableWidget {
+                    gridline-color: rgba(0, 0, 0, 80);
+                    border: none;
+                }
+                QTableWidget::item {
+                    border: 1px solid rgba(0, 0, 0, 80);
+                    padding: 2px;
+                }
+            """)
+            table.horizontalHeader().setStyleSheet("""
+                QHeaderView::section {
+                    border: 1px solid rgba(0, 0, 0, 80);
+                    background-color: #f8f8f8;
+                    padding: 4px;
+                }
+            """)
 
     # 이미지 표시
     def set_original_image(self, pixmap):
@@ -120,12 +128,16 @@ class ImageView(QWidget):
     def set_result_image(self, pixmap):
         self.result_image_label.setPixmap(pixmap.scaled(400, 400, Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
-    def set_table_item(self, row, key, value):
-        self.table.setItem(row, 0, QTableWidgetItem(str(key)))
-        self.table.setItem(row, 1, QTableWidgetItem(str(value)))
+    def set_stat_table_item(self, row, key, value):
+        self.stat_table.setItem(row, 0, QTableWidgetItem(str(key)))
+        self.stat_table.setItem(row, 1, QTableWidgetItem(str(value)))
+
+    def set_result_table_item(self, row, key, value):
+        self.result_table.setItem(row, 0, QTableWidgetItem(str(key)))
+        self.result_table.setItem(row, 1, QTableWidgetItem(str(value)))
 
     def set_prediction_value(self, value):
-        self.prediction_label.setText(f"Grain Score: {value:.2f}")
+        self.set_result_table_item(0, "GS", round(value, 2))
 
     def get_category_input(self):
         return self.category_combo.currentText()
