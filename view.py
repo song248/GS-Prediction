@@ -80,9 +80,9 @@ class ImageView(QWidget):
 
         # 테이블
         self.table = QTableWidget(self)
-        self.table.setRowCount(6)
+        self.table.setRowCount(10)
         self.table.setColumnCount(2)
-        self.table.setGeometry(1560, 180, 300, 280)
+        self.table.setGeometry(1560, 180, 300, 380)
         self.table.setHorizontalHeaderLabels(["Attr", "Value"])
         self.table.verticalHeader().setVisible(False)
 
@@ -108,7 +108,7 @@ class ImageView(QWidget):
         # 예측 결과 표시
         self.prediction_label = QLabel("Grain Score: N/A", self)
         self.prediction_label.setFont(QFont("Arial", 12, QFont.Bold))
-        self.prediction_label.setGeometry(1560, 480, 300, 40)
+        self.prediction_label.setGeometry(1560, 580, 300, 40)
 
     # 이미지 표시
     def set_original_image(self, pixmap):

@@ -3,18 +3,14 @@ import numpy as np
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtGui import QPixmap, QImage
 from skimage.morphology import skeletonize
-from model_inf import inference_single_image, predict_with_rfr
+from model_inf import inference_single_image, predict_with_rfr, predict_with_tabnet
 
 class ImageController:
     def __init__(self, model, view):
         self.model = model
         self.view = view
-
-        # 버튼 연결
         self.view.upload_button.clicked.connect(self.upload_image)
         self.view.predict_button.clicked.connect(self.run_prediction)
-
-        # 내부 상태 저장용
         self.result_mask = None
         self.result_image = None
 
@@ -22,26 +18,19 @@ class ImageController:
         file_path, _ = QFileDialog.getOpenFileName(self.view, "이미지 선택", "", "Images (*.png *.jpg *.jpeg *.bmp)")
         if not file_path:
             return
-
         self.model.load_image(file_path)
         self.view.set_original_image(self.convert_cv_qt(self.model.original_image))
-
         processed_img = self.preprocess_image(self.model.original_image)
         self.view.set_processed_image(self.convert_cv_qt(processed_img))
-
         self.result_mask = inference_single_image(processed_img)
 
     def run_prediction(self):
         if self.result_mask is None:
             print("[예측 오류] 먼저 이미지를 업로드하세요.")
             return
-
-        # 후처리 및 contour 추출
         real_final, contours = self.postprocess_mask(self.result_mask)
         self.result_image = real_final
         self.view.set_result_image(self.convert_cv_qt(real_final))
-
-        # contour 통계 계산
         areas = [cv2.contourArea(c) for c in contours]
         if areas:
             stats = {
@@ -57,7 +46,6 @@ class ImageController:
 
         for i, key in enumerate(stats):
             self.view.set_table_item(i, key, stats[key])
-
         category = self.view.get_category_input()
         steel = self.view.get_steel_input()
         lot = self.view.get_lot_input()
@@ -69,8 +57,12 @@ class ImageController:
             "Lot": lot
         }
 
-        prediction = predict_with_rfr(input_data)
-        self.view.set_prediction_value(prediction)
+        gs_prediction = predict_with_rfr(input_data)
+        self.view.set_prediction_value(gs_prediction)
+        tabnet_results = predict_with_tabnet(input_data, gs_prediction)
+        tabnet_keys = ["TS", "YS", "RA", "EL"]
+        for i, key in enumerate(tabnet_keys, start=6):
+            self.view.set_table_item(i, key, round(tabnet_results[key], 2))
 
     def preprocess_image(self, img):
         try:
@@ -119,7 +111,6 @@ class ImageController:
 
         return image_color, contours
 
-# 골격 관련 함수
 def find_endpoints(skel):
     endpoints = []
     h, w = skel.shape
